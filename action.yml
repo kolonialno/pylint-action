@@ -1,0 +1,13 @@
+name: "Pylint"
+description: "Run Pylint and annotate code with any warnings"
+inputs:
+  github-token:
+    description: "A token to authenticate against GitHub"
+    required: true
+  paths:
+    description: "Paths to lint, defaults to the project root."
+  diff-against-branch:
+    description: "A branch to check any modified files against. The `paths` argument is ignored if this is specified."
+runs:
+  using: "node12"
+  main: "dist/index.js"

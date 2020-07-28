@@ -1,0 +1,27 @@
+name: Release
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Installl dependencies
+        run: yarn install
+      - name: Build distribution bundle
+        run: yarn build
+      - name: Check that build was up to date
+        run: git diff --name-only --exit-code
+      - name: Create release (only if tag)
+        if: startsWith(github.ref, 'refs/tags/v') == true
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
