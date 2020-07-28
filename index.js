@@ -8,7 +8,7 @@ const maxAnnotations = 50;
 async function submitResult({ octokit, conclusion, annotations }) {
   const output = {
     title: "Pylint",
-    summary: `There are ${annotations.length} pylint warnings`
+    summary: `There are ${annotations.length} pylint warnings`,
   };
 
   // Create the check run and the first 50 annotations
@@ -20,8 +20,8 @@ async function submitResult({ octokit, conclusion, annotations }) {
     conclusion: conclusion,
     output: {
       ...output,
-      annotations: annotations.slice(0, maxAnnotations)
-    }
+      annotations: annotations.slice(0, maxAnnotations),
+    },
   });
 
   // Submit additional annotations (if more than maxAnnotations)
@@ -34,8 +34,8 @@ async function submitResult({ octokit, conclusion, annotations }) {
         annotations: annotations.slice(
           i * maxAnnotations,
           i * maxAnnotations + maxAnnotations
-        )
-      }
+        ),
+      },
     });
   }
 }
@@ -47,9 +47,9 @@ async function getStdout(commandAndArgs, { ignoreReturnCode = false }) {
 
   await exec.exec(command, args, {
     listeners: {
-      stdout: data => (stdout += data.toString())
+      stdout: (data) => (stdout += data.toString()),
     },
-    ignoreReturnCode
+    ignoreReturnCode,
   });
 
   return stdout.trim();
@@ -66,10 +66,10 @@ async function getModifiedPythonFiles(baseBranch) {
     "diff",
     "--name-only",
     "--diff-filter=AMRC",
-    baseCommit
+    baseCommit,
   ]);
 
-  return files.split("\n").filter(filename => filename.endsWith(".py"));
+  return files.split("\n").filter((filename) => filename.endsWith(".py"));
 }
 
 async function run() {
@@ -89,7 +89,7 @@ async function run() {
     // Run pylint with the output format set to JSON and parse the output
     const output = JSON.parse(
       await getStdout(["pylint", "--output-format=json", ...paths], {
-        ignoreReturnCode: false
+        ignoreReturnCode: false,
       })
     );
 
@@ -103,7 +103,7 @@ async function run() {
         end_column: error.column,
         annotation_level: "failure", // TODO: Use error.type
         title: `${error.symbol} (${error["message-id"]})`,
-        message: error.message
+        message: error.message,
       };
     });
 
