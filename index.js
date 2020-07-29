@@ -56,17 +56,14 @@ async function getStdout(commandAndArgs, options) {
 }
 
 async function getModifiedPythonFiles(baseBranch) {
-  // Get the last commit in the current branch that's merged into the base branch.
-  const baseCommit = await getStdout(["git", "merge-base", baseBranch, "HEAD"]);
-
   // Get a list of files that have been Added, Modified, Renamed, or Copied
-  // since the base commit.
+  // from the base branch.
   const files = await getStdout([
     "git",
     "diff",
     "--name-only",
     "--diff-filter=AMRC",
-    baseCommit,
+    baseBranch,
   ]);
 
   return files.split("\n").filter((filename) => filename.endsWith(".py"));
@@ -86,12 +83,15 @@ async function run() {
       ? await getModifiedPythonFiles(diffAgainstBranch)
       : (core.getInput("paths") || ".").split(" ");
 
-    // Run pylint with the output format set to JSON and parse the output
-    const output = JSON.parse(
-      await getStdout(["pylint", "--output-format=json", ...paths], {
-        ignoreReturnCode: false,
-      })
-    );
+    // Run pylint if we have at least one path or file to check
+    const output =
+      paths.length > 0
+        ? JSON.parse(
+            await getStdout(["pylint", "--output-format=json", ...paths], {
+              ignoreReturnCode: false,
+            })
+          )
+        : [];
 
     // Convert the pylint output to Github annotations
     const annotations = output.map(function errorToAnnotation(error) {
