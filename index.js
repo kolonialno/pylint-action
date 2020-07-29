@@ -40,7 +40,7 @@ async function submitResult({ octokit, conclusion, annotations }) {
   }
 }
 
-async function getStdout(commandAndArgs, { ignoreReturnCode = false }) {
+async function getStdout(commandAndArgs, options) {
   let stdout = "";
 
   const [command, ...args] = commandAndArgs;
@@ -49,7 +49,7 @@ async function getStdout(commandAndArgs, { ignoreReturnCode = false }) {
     listeners: {
       stdout: (data) => (stdout += data.toString()),
     },
-    ignoreReturnCode,
+    ignoreReturnCode: (options || {}).ignoreReturnCode || false,
   });
 
   return stdout.trim();
