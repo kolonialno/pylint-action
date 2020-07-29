@@ -88,7 +88,7 @@ async function run() {
       paths.length > 0
         ? JSON.parse(
             await getStdout(["pylint", "--output-format=json", ...paths], {
-              ignoreReturnCode: false,
+              ignoreReturnCode: true,
             })
           )
         : [];
