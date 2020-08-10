@@ -64,6 +64,9 @@ async function getModifiedPythonFiles(baseBranch) {
     "--name-only",
     "--diff-filter=AMRC",
     baseBranch,
+    '--',
+    '.',
+    "':!*/migrations/*'",
   ]);
 
   return files.split("\n").filter((filename) => filename.endsWith(".py"));
