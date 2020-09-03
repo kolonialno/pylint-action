@@ -64,8 +64,8 @@ async function getModifiedPythonFiles(baseBranch) {
     "--name-only",
     "--diff-filter=AMRC",
     baseBranch,
-    '--',
-    '.',
+    "--",
+    ".",
     "':!*/migrations/*'",
   ]);
 
