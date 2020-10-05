@@ -3,6 +3,7 @@
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var os = _interopDefault(require('os'));
+var fs = _interopDefault(require('fs'));
 var path = _interopDefault(require('path'));
 var Stream = _interopDefault(require('stream'));
 var http = _interopDefault(require('http'));
@@ -10,7 +11,6 @@ var Url = _interopDefault(require('url'));
 var https = _interopDefault(require('https'));
 var zlib = _interopDefault(require('zlib'));
 var child_process = _interopDefault(require('child_process'));
-var fs = _interopDefault(require('fs'));
 var assert = _interopDefault(require('assert'));
 var events = _interopDefault(require('events'));
 var util = _interopDefault(require('util'));
@@ -35,6 +35,27 @@ function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
 }
 
+var utils = createCommonjsModule(function (module, exports) {
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Sanitizes an input into a string so it can be passed into issueCommand safely
+ * @param input input to sanitize into a string
+ */
+function toCommandValue(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    else if (typeof input === 'string' || input instanceof String) {
+        return input;
+    }
+    return JSON.stringify(input);
+}
+exports.toCommandValue = toCommandValue;
+
+});
+
 var command = createCommonjsModule(function (module, exports) {
 var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
@@ -45,6 +66,7 @@ var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const os$1 = __importStar(os);
+
 /**
  * Commands
  *
@@ -98,34 +120,51 @@ class Command {
         return cmdStr;
     }
 }
-/**
- * Sanitizes an input into a string so it can be passed into issueCommand safely
- * @param input input to sanitize into a string
- */
-function toCommandValue(input) {
-    if (input === null || input === undefined) {
-        return '';
-    }
-    else if (typeof input === 'string' || input instanceof String) {
-        return input;
-    }
-    return JSON.stringify(input);
-}
-exports.toCommandValue = toCommandValue;
 function escapeData(s) {
-    return toCommandValue(s)
+    return utils.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A');
 }
 function escapeProperty(s) {
-    return toCommandValue(s)
+    return utils.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A')
         .replace(/:/g, '%3A')
         .replace(/,/g, '%2C');
 }
+
+});
+
+var fileCommand = createCommonjsModule(function (module, exports) {
+// For internal use, subject to change.
+var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fs$1 = __importStar(fs);
+const os$1 = __importStar(os);
+
+function issueCommand(command, message) {
+    const filePath = process.env[`GITHUB_${command}`];
+    if (!filePath) {
+        throw new Error(`Unable to find environment variable for file command ${command}`);
+    }
+    if (!fs$1.existsSync(filePath)) {
+        throw new Error(`Missing file at path: ${filePath}`);
+    }
+    fs$1.appendFileSync(filePath, `${utils.toCommandValue(message)}${os$1.EOL}`, {
+        encoding: 'utf8'
+    });
+}
+exports.issueCommand = issueCommand;
 
 });
 
@@ -147,6 +186,8 @@ var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+
+
 
 const os$1 = __importStar(os);
 const path$1 = __importStar(path);
@@ -174,9 +215,17 @@ var ExitCode;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function exportVariable(name, val) {
-    const convertedVal = command.toCommandValue(val);
+    const convertedVal = utils.toCommandValue(val);
     process.env[name] = convertedVal;
-    command.issueCommand('set-env', { name }, convertedVal);
+    const filePath = process.env['GITHUB_ENV'] || '';
+    if (filePath) {
+        const delimiter = '_GitHubActionsFileCommandDelimeter_';
+        const commandValue = `${name}<<${delimiter}${os$1.EOL}${convertedVal}${os$1.EOL}${delimiter}`;
+        fileCommand.issueCommand('ENV', commandValue);
+    }
+    else {
+        command.issueCommand('set-env', { name }, convertedVal);
+    }
 }
 exports.exportVariable = exportVariable;
 /**
@@ -192,7 +241,13 @@ exports.setSecret = setSecret;
  * @param inputPath
  */
 function addPath(inputPath) {
-    command.issueCommand('add-path', {}, inputPath);
+    const filePath = process.env['GITHUB_PATH'] || '';
+    if (filePath) {
+        fileCommand.issueCommand('PATH', inputPath);
+    }
+    else {
+        command.issueCommand('add-path', {}, inputPath);
+    }
     process.env['PATH'] = `${inputPath}${path$1.delimiter}${process.env['PATH']}`;
 }
 exports.addPath = addPath;
