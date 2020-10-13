@@ -5,8 +5,7 @@
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.1",
-    "@actions/github": "^1.1.0",
-    "@actions/glob": "^0.1.0"
+    "@actions/github": "^1.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^14.0.0",

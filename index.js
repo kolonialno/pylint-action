@@ -1,7 +1,6 @@
 import core from "@actions/core";
 import github from "@actions/github";
 import exec from "@actions/exec";
-import glob from "@actions/glob";
 
 // The maximum number of annotations that GitHub will accept in a single requrest
 const maxAnnotations = 50;
@@ -57,6 +56,11 @@ async function getStdout(commandAndArgs, options) {
 }
 
 async function getModifiedPythonFiles(baseBranch) {
+  const ignorePattern = (core.getInput("ignore-patterns") || "").trim();
+  const extraArgs = ignorePattern
+    ? ["--", ...ignorePattern.split(" ").map((pattern) => `:!${pattern}`)]
+    : [];
+
   // Get a list of files that have been Added, Modified, Renamed, or Copied
   // from the base branch.
   const files = await getStdout([
@@ -65,23 +69,10 @@ async function getModifiedPythonFiles(baseBranch) {
     "--name-only",
     "--diff-filter=AMRC",
     baseBranch,
+    ...extraArgs,
   ]);
 
-  const ignorePattern = core.getInput("ignore-patterns").trim();
-  const inputPaths = files.split("\n").filter((path) => path.endsWith(".py"));
-
-  if (ignorePattern) {
-    const filePatterns = [
-      // Start with the input files
-      ...inputPaths,
-      // And finally apply any ignore-patterns specified by the user
-      ...ignorePattern.split(" ").map((pattern) => `!${pattern}`),
-    ];
-    const globber = await glob.create(filePatterns.join("\n"));
-    return await globber.glob();
-  } else {
-    return inputPaths;
-  }
+  return files.split("\n").filter((path) => path.endsWith(".py"));
 }
 
 async function run() {

@@ -9,7 +9,7 @@ inputs:
   diff-against-branch:
     description: "A branch to check any modified files against. The `paths` argument is ignored if this is specified."
   ignore-patterns:
-    description: "Ignore files matching these patterns. Only used when diff-against-branch is used, for all other cases please use a .pylintrc config file. E.g. **/migrations/*"
+    description: "Ignore files matching these patterns. Only used when diff-against-branch is used, for all other cases please use a .pylintrc config file. E.g. *migrations*"
 runs:
   using: "node12"
   main: "dist/index.js"
